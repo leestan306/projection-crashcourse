@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projection Crash Course</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --accent: #e8ff47;
+    --accent2: #47c8ff;
+    --accent3: #ff6b47;
+    --text: #f0efe8;
+    --muted: #7a7a8a;
+    --border: rgba(255,255,255,0.08);
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-head);
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  #cursor {
+    position: fixed; pointer-events: none; z-index: 9999;
+    width: 12px; height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s;
+    mix-blend-mode: difference;
+  }
+
+  /* Slides container */
+  #slides {
+    width: 100vw; height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(.4,0,.2,1), transform 0.5s cubic-bezier(.4,0,.2,1);
+    transform: translateY(30px);
+    overflow-y: auto;
+  }
+  .slide.active {
+    opacity: 1; pointer-events: all;
+    transform: translateY(0);
+  }
+  .slide.exit {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  /* Slide backgrounds — each module gets its own feel */
+  .slide-cover { background: var(--bg); justify-content: center; align-items: center; text-align: center; }
+  .slide-cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(232,255,71,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .theme-1 { background: var(--bg); }
+  .theme-2 { background: #0d0d1a; }
+  .theme-3 { background: #0a0f0d; }
+  .theme-4 { background: #0f0a0a; }
+  .theme-5 { background: #0a0a15; }
+  .theme-6 { background: #0d0a10; }
+  .theme-7 { background: #0a0d0f; }
+  .theme-8 { background: #100a0a; }
+
+  /* Decorative grid lines */
+  .slide::after {
+    content: '';
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Module badge */
+  .module-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .module-tag::before {
+    content: '';
+    display: inline-block;
+    width: 24px; height: 1px;
+    background: var(--muted);
+  }
+
+  /* Headings */
+  h1.cover-title {
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    max-width: 900px;
+  }
+  h1.cover-title span { color: var(--accent); }
+
+  h2.slide-title {
+    font-size: clamp(32px, 4.5vw, 60px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin-bottom: 32px;
+    color: var(--text);
+  }
+  h2.slide-title .hi { color: var(--accent); }
+  h2.slide-title .hi2 { color: var(--accent2); }
+  h2.slide-title .hi3 { color: var(--accent3); }
+
+  h3.sub-title {
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 600;
+    margin-bottom: 16px;
+    margin-top: 28px;
+    color: var(--accent2);
+  }
+
+  /* Body text */
+  .body-text {
+    font-family: var(--font-mono);
+    font-size: clamp(13px, 1.5vw, 16px);
+    line-height: 1.75;
+    color: rgba(240,239,232,0.78);
+    max-width: 780px;
+  }
+  .body-text strong { color: var(--accent); font-weight: 700; }
+
+  /* Cover subtitle */
+  .cover-sub {
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.4vw, 15px);
+    color: var(--muted);
+    margin-top: 24px;
+    letter-spacing: 0.05em;
+  }
+  .cover-sub span { color: var(--accent2); }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; margin: 8px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.2vw, 14px);
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: rgba(232,255,71,0.08);
+    color: var(--accent);
+    font-weight: 700;
+    border-bottom: 1px solid rgba(232,255,71,0.2);
+    letter-spacing: 0.05em;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: rgba(240,239,232,0.8);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td strong { color: var(--accent2); }
+
+  /* Cards grid */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: rgba(232,255,71,0.25); transform: translateY(-2px); }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--accent));
+    opacity: 0.6;
+  }
+  .card.c2::before { --card-accent: var(--accent2); }
+  .card.c3::before { --card-accent: var(--accent3); }
+  .card-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card-val {
+    font-size: clamp(14px, 1.6vw, 17px);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 13px);
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Mode boxes */
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .mode-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    transition: 0.2s;
+  }
+  .mode-box:hover { transform: translateY(-2px); }
+  .mode-box.best { border-color: rgba(232,255,71,0.4); background: rgba(232,255,71,0.04); }
+  .mode-name {
+    font-size: clamp(16px, 1.8vw, 20px);
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .mode-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    letter-spacing: 0.1em;
+  }
+  .badge-green { background: rgba(71,255,157,0.15); color: #47ff9d; border: 1px solid rgba(71,255,157,0.3); }
+  .badge-red { background: rgba(255,107,71,0.15); color: var(--accent3); border: 1px solid rgba(255,107,71,0.3); }
+  .badge-yellow { background: rgba(232,255,71,0.12); color: var(--accent); border: 1px solid rgba(232,255,71,0.3); }
+  .badge-gray { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border); }
+  .mode-text {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 13px);
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Keyboard shortcuts */
+  .shortcuts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+    border-radius: 5px;
+    padding: 3px 8px;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .shortcut-desc {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 13px);
+    color: rgba(240,239,232,0.7);
+  }
+
+  /* Checklist */
+  .checklist { margin-top: 8px; }
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.2vw, 14px);
+    color: rgba(240,239,232,0.78);
+    line-height: 1.4;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 18px; height: 18px; flex-shrink: 0;
+    border: 1px solid rgba(232,255,71,0.4);
+    border-radius: 3px;
+    margin-top: 1px;
+  }
+  .check-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    min-width: 22px;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  /* Tip box */
+  .tip {
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    background: rgba(232,255,71,0.04);
+    border-radius: 0 8px 8px 0;
+    margin-top: 16px;
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.3vw, 14px);
+    color: rgba(240,239,232,0.78);
+    line-height: 1.6;
+    max-width: 760px;
+  }
+  .tip strong { color: var(--accent); }
+  .tip.warn { border-color: var(--accent3); background: rgba(255,107,71,0.04); }
+  .tip.warn strong { color: var(--accent3); }
+  .tip.info { border-color: var(--accent2); background: rgba(71,200,255,0.04); }
+  .tip.info strong { color: var(--accent2); }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  /* Numbered list */
+  .num-list { margin-top: 8px; }
+  .num-item {
+    display: flex; gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: clamp(12px, 1.3vw, 15px);
+    color: rgba(240,239,232,0.8);
+    line-height: 1.5;
+  }
+  .num-item:last-child { border-bottom: none; }
+  .num-circle {
+    width: 26px; height: 26px; flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(232,255,71,0.1);
+    border: 1px solid rgba(232,255,71,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+
+  /* Slide counter + progress */
+  #progress-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 2px; background: rgba(255,255,255,0.05);
+    z-index: 100;
+  }
+  #progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  }
+
+  #slide-counter {
+    position: fixed; bottom: 20px; right: 30px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    z-index: 100;
+  }
+
+  /* Nav arrows */
+  .nav-btn {
+    position: fixed;
+    top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: none;
+    z-index: 100;
+    transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+    opacity: 0.4;
+    color: var(--text);
+    font-size: 18px;
+    user-select: none;
+  }
+  .nav-btn:hover { background: rgba(232,255,71,0.1); border-color: rgba(232,255,71,0.3); opacity: 1; }
+  #btn-prev { left: 20px; }
+  #btn-next { right: 20px; }
+  .nav-btn.hidden { opacity: 0; pointer-events: none; }
+
+  /* Slide menu / TOC */
+  #menu-btn {
+    position: fixed; top: 20px; left: 28px;
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    cursor: none; z-index: 200;
+    transition: 0.2s;
+  }
+  #menu-btn:hover { background: rgba(232,255,71,0.08); border-color: rgba(232,255,71,0.25); }
+  #menu-btn span { width: 16px; height: 1.5px; background: var(--muted); border-radius: 1px; transition: 0.2s; }
+  #menu-btn:hover span { background: var(--accent); }
+
+  #toc-panel {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: 300px;
+    background: rgba(10,10,15,0.97);
+    border-right: 1px solid var(--border);
+    z-index: 190;
+    padding: 80px 28px 40px;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    backdrop-filter: blur(20px);
+  }
+  #toc-panel.open { transform: translateX(0); }
+  .toc-title {
+    font-size: 11px; font-family: var(--font-mono);
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 24px;
+  }
+  .toc-item {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: none;
+    transition: 0.15s;
+  }
+  .toc-item:hover .toc-label { color: var(--accent); }
+  .toc-item.current .toc-label { color: var(--accent); }
+  .toc-item.current .toc-num { color: var(--accent); }
+  .toc-num { font-family: var(--font-mono); font-size: 10px; color: var(--muted); min-width: 24px; padding-top: 2px; }
+  .toc-label { font-size: 13px; font-weight: 600; color: rgba(240,239,232,0.7); line-height: 1.3; }
+
+  /* Module number big display */
+  .big-num {
+    position: absolute; top: 40px; right: 60px;
+    font-size: clamp(80px, 12vw, 160px);
+    font-weight: 800;
+    color: rgba(255,255,255,0.025);
+    line-height: 1;
+    pointer-events: none;
+    letter-spacing: -0.05em;
+    z-index: 0;
+    user-select: none;
+  }
+
+  /* Content above overlay */
+  .slide > * { position: relative; z-index: 1; }
+
+  /* Divider line */
+  .divider {
+    width: 40px; height: 2px;
+    background: var(--accent);
+    margin: 12px 0 24px;
+    flex-shrink: 0;
+  }
+  .divider.d2 { background: var(--accent2); }
+  .divider.d3 { background: var(--accent3); }
+
+  /* Touch & keyboard hint */
+  #hint {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted); letter-spacing: 0.1em;
+    z-index: 100;
+    animation: fadeout 1s 4s ease forwards;
+  }
+  @keyframes fadeout { to { opacity: 0; } }
+
+  /* Scrollable slide inner */
+  .slide-inner {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface2) transparent;
+    padding-right: 10px;
+  }
+  .slide-inner::-webkit-scrollbar { width: 4px; }
+  .slide-inner::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+
+  /* Cover dots decoration */
+  .cover-dots {
+    display: flex; gap: 8px; justify-content: center;
+    margin-top: 36px;
+  }
+  .cover-dots span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); opacity: 0.4;
+  }
+  .cover-dots span:nth-child(3n+1) { background: var(--accent); opacity: 0.7; }
+  .cover-dots span:nth-child(3n+2) { background: var(--accent2); opacity: 0.5; }
+
+  /* Tag chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11px;
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted); background: var(--surface);
+    letter-spacing: 0.05em;
+  }
+  .chip.a { border-color: rgba(232,255,71,0.3); color: var(--accent); background: rgba(232,255,71,0.06); }
+  .chip.b { border-color: rgba(71,200,255,0.3); color: var(--accent2); background: rgba(71,200,255,0.06); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 28px; }
+    .two-col { grid-template-columns: 1fr; gap: 24px; }
+    .modes { grid-template-columns: 1fr; }
+    #toc-panel { width: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+
+<!-- Menu button -->
+<div id="menu-btn" onclick="toggleMenu()">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- TOC Panel -->
+<div id="toc-panel">
+  <p class="toc-title">Contents</p>
+  <div id="toc-list"></div>
+</div>
+
+<!-- Nav buttons -->
+<div class="nav-btn" id="btn-prev" onclick="changeSlide(-1)">&#8592;</div>
+<div class="nav-btn" id="btn-next" onclick="changeSlide(1)">&#8594;</div>
+
+<!-- Progress -->
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="slide-counter">01 / 30</div>
+<div id="hint">← → Arrow keys or click to navigate</div>
+
+<!-- ===================== SLIDES ===================== -->
+<div id="slides">
+
+  <!-- SLIDE 0: COVER -->
+  <div class="slide slide-cover active" data-title="Cover">
+    <h1 class="cover-title">Projection<br><span>Crash Course</span></h1>
+    <p class="cover-sub">Windows Display · <span>VideoPsalm</span> · BibleShow · Best Practices</p>
+    <div class="cover-dots">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <p style="font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:48px;letter-spacing:0.1em;">8 MODULES · 30 SLIDES · COMPLETE GUIDE</p>
+  </div>
+
+  <!-- ===== MODULE 1 ===== -->
+
+  <!-- SLIDE 1 -->
+  <div class="slide theme-1" data-title="M1 · What is a Display?">
+    <div class="big-num">1</div>
+    <p class="module-tag">Module 1 — Windows Display Basics</p>
+    <h2 class="slide-title">What is a <span class="hi">"display"</span><br>in projection?</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text">Your computer has one built-in screen — Windows calls this <strong>Display 1</strong>. When you connect a projector via cable, Windows detects it as <strong>Display 2</strong>.</p>
+      <p class="body-text" style="margin-top:14px;">Projection software like VideoPsalm and BibleShow <strong>do not control the projector directly</strong>. They output to a screen number. If Windows does not see the projector as a screen, the software cannot send anything to it.</p>
+      <div class="tip info" style="margin-top:20px;"><strong>First rule:</strong> Always connect the projector and turn it on <strong>before</strong> opening any projection software. Windows must detect Display 2 first.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="slide theme-1" data-title="M1 · Connection Types">
+    <div class="big-num">1</div>
+    <p class="module-tag">Module 1 — Windows Display Basics</p>
+    <h2 class="slide-title">Connection <span class="hi2">types</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Type</th><th>Description</th><th>Note</th></tr>
+          <tr><td><strong>HDMI</strong></td><td>Most common. Audio + video.</td><td>Trapezoid port. Use this first.</td></tr>
+          <tr><td><strong>VGA</strong></td><td>Blue 15-pin connector.</td><td>Video only — separate audio cable needed.</td></tr>
+          <tr><td><strong>DisplayPort</strong></td><td>High-quality digital.</td><td>Needs adapter for most projectors.</td></tr>
+          <tr><td><strong>USB-C</strong></td><td>Found on slim/new laptops.</td><td>Confirm your USB-C port supports video output.</td></tr>
+          <tr><td><strong>Wireless</strong></td><td>No cable. Miracast/WiDi.</td><td>Slight lag — not ideal for live service.</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="slide theme-1" data-title="M1 · Resolution & Aspect Ratio">
+    <div class="big-num">1</div>
+    <p class="module-tag">Module 1 — Windows Display Basics</p>
+    <h2 class="slide-title">Resolution &amp; <span class="hi3">aspect ratio</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="cards">
+        <div class="card"><div class="card-label">HD</div><div class="card-val">1280 × 720</div><div class="card-desc">Budget &amp; older projectors. 16:9 widescreen.</div></div>
+        <div class="card c2"><div class="card-label">Full HD</div><div class="card-val">1920 × 1080</div><div class="card-desc">Most modern projectors. 16:9 widescreen.</div></div>
+        <div class="card c3"><div class="card-label">XGA (legacy)</div><div class="card-val">1024 × 768</div><div class="card-desc">Very old church projectors. 4:3 square-ish.</div></div>
+      </div>
+      <div class="tip" style="margin-top:20px;"><strong>Rule:</strong> Always set your laptop output resolution to match the projector's native resolution. A mismatch causes blurry text — especially visible in lyrics and scripture.</div>
+      <p class="body-text" style="margin-top:14px;">To set resolution: right-click desktop → <strong>Display settings</strong> → click Display 2 → select the matching resolution.</p>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 2 ===== -->
+
+  <!-- SLIDE 4 -->
+  <div class="slide theme-2" data-title="M2 · Win+P — The Shortcut">
+    <div class="big-num">2</div>
+    <p class="module-tag">Module 2 — Win+P Display Modes</p>
+    <h2 class="slide-title">The <span class="hi">Win + P</span><br>shortcut</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text">Press <strong>Windows key + P</strong> simultaneously. A panel slides in from the right with four display mode options.</p>
+      <p class="body-text" style="margin-top:14px;">You will use this shortcut constantly. <strong>Memorise it before your first service.</strong></p>
+      <div class="tip" style="margin-top:20px;"><strong>What it does:</strong> Tells Windows how to use your laptop screen and the connected projector together.</div>
+      <div class="chips" style="margin-top:20px;">
+        <span class="chip">PC Screen Only</span>
+        <span class="chip">Duplicate</span>
+        <span class="chip a">Extend ✓</span>
+        <span class="chip">Second Screen Only</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="slide theme-2" data-title="M2 · The Four Modes">
+    <div class="big-num">2</div>
+    <p class="module-tag">Module 2 — Win+P Display Modes</p>
+    <h2 class="slide-title">The four <span class="hi2">display modes</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <div class="modes">
+        <div class="mode-box">
+          <div class="mode-badge badge-gray">Mode 1</div>
+          <div class="mode-name">PC Screen Only</div>
+          <div class="mode-text">Laptop active, projector blank. Use before service or for private work.</div>
+        </div>
+        <div class="mode-box">
+          <div class="mode-badge badge-red">Mode 2 — Avoid</div>
+          <div class="mode-name">Duplicate</div>
+          <div class="mode-text">Both screens mirror. Congregation sees your mouse, taskbar, everything. Never use in a live service.</div>
+        </div>
+        <div class="mode-box best">
+          <div class="mode-badge badge-green">Mode 3 — Always use this ✓</div>
+          <div class="mode-name" style="color:var(--accent)">Extend</div>
+          <div class="mode-text">Laptop = your private control. Projector = clean output. VideoPsalm &amp; BibleShow send output to the projector screen only.</div>
+        </div>
+        <div class="mode-box">
+          <div class="mode-badge badge-gray">Mode 4 — Rarely</div>
+          <div class="mode-name">Second Screen Only</div>
+          <div class="mode-text">Projector only. Laptop screen goes dark. Only for dedicated projection PCs.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="slide theme-2" data-title="M2 · Configuring Extended Display">
+    <div class="big-num">2</div>
+    <p class="module-tag">Module 2 — Win+P Display Modes</p>
+    <h2 class="slide-title">Configuring <span class="hi">extended</span> display</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>Right-click desktop → <strong>Display settings</strong>. You'll see two numbered rectangles.</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Click <strong>Identify</strong> — a large number appears on each screen. Note which is the projector.</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Drag the Display 2 rectangle to the right of Display 1 to match your physical setup.</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>Click Display 2 → set <strong>Resolution</strong> to match the projector's native resolution.</div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>Set <strong>Refresh rate</strong> to 60 Hz.</div></div>
+        <div class="num-item"><div class="num-circle">6</div><div><strong>Do NOT</strong> check "Make this my main display" for Display 2. Your taskbar must stay on the laptop.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 3 ===== -->
+
+  <!-- SLIDE 7 -->
+  <div class="slide theme-3" data-title="M3 · VideoPsalm Overview">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title"><span class="hi">VideoPsalm</span><br>overview</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text">Free, fully-featured worship projection software. Handles songs, Bible passages, images, videos, announcements, and stage displays — all from one interface.</p>
+      <div class="tbl-wrap" style="margin-top:20px;">
+        <table>
+          <tr><th>Panel</th><th>Location</th><th>Purpose</th></tr>
+          <tr><td><strong>Library</strong></td><td>Left</td><td>Songs, schedules, Bible, media files</td></tr>
+          <tr><td><strong>Schedule</strong></td><td>Centre-left</td><td>Today's order of service</td></tr>
+          <tr><td><strong>Thumbnails</strong></td><td>Bottom centre</td><td>Slides for the selected item</td></tr>
+          <tr><td><strong>Preview</strong></td><td>Centre</td><td>Next slide before going live</td></tr>
+          <tr><td><strong>Live indicator</strong></td><td>Top right</td><td>What is currently on the projector</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 -->
+  <div class="slide theme-3" data-title="M3 · Screen Setup">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title">Output screen <span class="hi2">setup</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <p class="body-text" style="margin-bottom:16px;">Do this once before your first service — and whenever you use a new projector.</p>
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>Go to <strong>Settings → Screens</strong> (or press F10)</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Under <strong>Presentation Screen</strong>, select your projector (Display 2)</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Under <strong>Preview Screen</strong>, select Display 1 (your laptop)</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>Click <strong>OK</strong> — output now goes to the projector only</div></div>
+      </div>
+      <div class="tip warn" style="margin-top:16px;"><strong>If projector is not listed:</strong> Close VideoPsalm. Reconnect the projector. Set Win+P to Extend. Reopen VideoPsalm.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9 -->
+  <div class="slide theme-3" data-title="M3 · Building a Schedule">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title">Building a <span class="hi">schedule</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text">A <strong>Schedule</strong> is your order of service — songs, scripture, images, videos in order.</p>
+      <div class="num-list" style="margin-top:16px;">
+        <div class="num-item"><div class="num-circle">1</div><div>Right-click <strong>Schedules</strong> in the Library → <strong>New Schedule</strong>. Name it (e.g., "Sunday 13 April").</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Click the <strong>Songs</strong> section. Use the search box. Drag songs into the Schedule, or double-click to add.</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Click the <strong>Bible</strong> tab to add scripture. Select translation, book/chapter/verse, then drag to Schedule.</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>Drag items up/down to reorder. You can reorder at any time — even during a live service.</div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>Press <strong>Ctrl+S</strong> to save. Save often.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10 -->
+  <div class="slide theme-3" data-title="M3 · Going Live">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title">Going <span class="hi3">live</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Action</th><th>Result</th></tr>
+          <tr><td>Click a thumbnail</td><td>Loads into Preview — not live yet</td></tr>
+          <tr><td>Double-click a thumbnail</td><td>Goes live immediately on projector</td></tr>
+          <tr><td><kbd>Space</kbd> or <kbd>Enter</kbd></td><td>Advances to next slide (live)</td></tr>
+          <tr><td><kbd>→</kbd></td><td>Next slide</td></tr>
+          <tr><td><kbd>←</kbd></td><td>Previous slide</td></tr>
+          <tr><td><kbd>↑ / ↓</kbd></td><td>Navigate between schedule items</td></tr>
+          <tr><td><kbd>F5</kbd></td><td>Go live with selected slide</td></tr>
+        </table>
+      </div>
+      <div class="tip" style="margin-top:16px;"><strong>Tip:</strong> Always stay one slide ahead of the worship leader. Advance before the congregation finishes reading the current slide.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11 -->
+  <div class="slide theme-3" data-title="M3 · Critical Shortcuts">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title">Critical <span class="hi">shortcuts</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="shortcuts">
+        <div class="shortcut-row"><kbd>B</kbd><span class="shortcut-desc">Black screen (blank)</span></div>
+        <div class="shortcut-row"><kbd>W</kbd><span class="shortcut-desc">White screen</span></div>
+        <div class="shortcut-row"><kbd>L</kbd><span class="shortcut-desc">Logo/church screen</span></div>
+        <div class="shortcut-row"><kbd>F5</kbd><span class="shortcut-desc">Go live</span></div>
+        <div class="shortcut-row"><kbd>Esc</kbd><span class="shortcut-desc">Stop presentation</span></div>
+        <div class="shortcut-row"><kbd>Ctrl+F</kbd><span class="shortcut-desc">Quick search songs</span></div>
+        <div class="shortcut-row"><kbd>Ctrl+S</kbd><span class="shortcut-desc">Save schedule</span></div>
+        <div class="shortcut-row"><kbd>F10</kbd><span class="shortcut-desc">Screen settings</span></div>
+        <div class="shortcut-row"><kbd>Space / Enter</kbd><span class="shortcut-desc">Next slide</span></div>
+        <div class="shortcut-row"><kbd>← →</kbd><span class="shortcut-desc">Prev / Next slide</span></div>
+      </div>
+      <div class="tip warn" style="margin-top:16px;"><strong>The most important key:</strong> <kbd style="font-family:var(--font-mono);color:var(--accent3)">B</kbd> — Blank the screen instantly when anything goes wrong.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12 -->
+  <div class="slide theme-3" data-title="M3 · Themes & Formatting">
+    <div class="big-num">3</div>
+    <p class="module-tag">Module 3 — VideoPsalm</p>
+    <h2 class="slide-title">Themes &amp; <span class="hi2">formatting</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <p class="body-text" style="margin-bottom:16px;">A <strong>Theme</strong> is a template controlling font, size, colour, background, and text position for all slides.</p>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Setting</th><th>Recommended value</th></tr>
+          <tr><td>Background</td><td>Dark (black, deep blue, or dark image)</td></tr>
+          <tr><td>Font</td><td>Arial, Calibri, or Segoe UI</td></tr>
+          <tr><td>Font size (lyrics)</td><td>40–48pt minimum</td></tr>
+          <tr><td>Font size (scripture)</td><td>36–40pt minimum</td></tr>
+          <tr><td>Text colour</td><td>White or soft yellow</td></tr>
+          <tr><td>Text shadow</td><td>Enabled — dark, 2–3px offset</td></tr>
+        </table>
+      </div>
+      <p class="body-text" style="margin-top:14px;">Create/edit themes: <strong>Settings → Themes → New Theme</strong>. Set a default theme: <strong>Settings → Default Theme</strong>.</p>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 4 ===== -->
+
+  <!-- SLIDE 13 -->
+  <div class="slide theme-4" data-title="M4 · BibleShow Overview">
+    <div class="big-num">4</div>
+    <p class="module-tag">Module 4 — BibleShow</p>
+    <h2 class="slide-title"><span class="hi">BibleShow</span><br>overview</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text">Purpose-built for Bible verse projection. Faster than VideoPsalm for spontaneous verse lookup. Supports bilingual (dual-language) display natively.</p>
+      <div class="tbl-wrap" style="margin-top:20px;">
+        <table>
+          <tr><th>Area</th><th>Purpose</th></tr>
+          <tr><td><strong>Reference input (top)</strong></td><td>Type Bible reference here — e.g. John 3:16</td></tr>
+          <tr><td><strong>Verse list (centre)</strong></td><td>All verses matching your search</td></tr>
+          <tr><td><strong>Live preview (right)</strong></td><td>Real-time preview of the projector output</td></tr>
+          <tr><td><strong>Translation selector</strong></td><td>Switch Bible version instantly</td></tr>
+        </table>
+      </div>
+      <p class="body-text" style="margin-top:14px;">Output setup: <strong>Options → Display Settings → Output Display → select Display 2</strong></p>
+    </div>
+  </div>
+
+  <!-- SLIDE 14 -->
+  <div class="slide theme-4" data-title="M4 · Finding & Projecting Verses">
+    <div class="big-num">4</div>
+    <p class="module-tag">Module 4 — BibleShow</p>
+    <h2 class="slide-title">Finding &amp; projecting <span class="hi2">verses</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <p class="body-text" style="margin-bottom:16px;">Press <strong>F2</strong> to focus the search box from anywhere, then type:</p>
+      <div class="cards">
+        <div class="card"><div class="card-label">Single verse</div><div class="card-val">John 3:16</div><div class="card-desc">Book, chapter:verse</div></div>
+        <div class="card c2"><div class="card-label">Verse range</div><div class="card-val">John 3:16-18</div><div class="card-desc">Hyphen between start and end verse</div></div>
+        <div class="card c3"><div class="card-label">Abbreviated</div><div class="card-val">Ps 23:1-3</div><div class="card-desc">Short book names work</div></div>
+      </div>
+      <p class="body-text" style="margin-top:16px;">Press <strong>Enter</strong> to search. Click a verse to project it. Use <strong>↑ ↓ arrow keys</strong> to move through verses — the projector updates live as you press.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 15 -->
+  <div class="slide theme-4" data-title="M4 · BibleShow Shortcuts">
+    <div class="big-num">4</div>
+    <p class="module-tag">Module 4 — BibleShow</p>
+    <h2 class="slide-title">BibleShow <span class="hi3">shortcuts</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="shortcuts">
+        <div class="shortcut-row"><kbd>F2</kbd><span class="shortcut-desc">Focus reference search box</span></div>
+        <div class="shortcut-row"><kbd>Enter</kbd><span class="shortcut-desc">Project selected verse</span></div>
+        <div class="shortcut-row"><kbd>↑ / ↓</kbd><span class="shortcut-desc">Prev / Next verse (live update)</span></div>
+        <div class="shortcut-row"><kbd>F5</kbd><span class="shortcut-desc">Blank/clear the screen</span></div>
+        <div class="shortcut-row"><kbd>Ctrl+D</kbd><span class="shortcut-desc">Toggle display on/off</span></div>
+        <div class="shortcut-row"><kbd>Ctrl+B</kbd><span class="shortcut-desc">Switch Bible translation</span></div>
+        <div class="shortcut-row"><kbd>Ctrl+F</kbd><span class="shortcut-desc">Full-text keyword search</span></div>
+        <div class="shortcut-row"><kbd>Esc</kbd><span class="shortcut-desc">Clear current display</span></div>
+      </div>
+      <div class="tip info" style="margin-top:16px;"><strong>Bilingual mode:</strong> Options → Layout → Dual Language. Show two translations simultaneously for multilingual congregations.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16 -->
+  <div class="slide theme-4" data-title="M4 · BibleShow vs VideoPsalm">
+    <div class="big-num">4</div>
+    <p class="module-tag">Module 4 — BibleShow</p>
+    <h2 class="slide-title">BibleShow <span class="hi">vs</span> VideoPsalm</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Situation</th><th>Use</th></tr>
+          <tr><td>Full planned service — songs, media, announcements</td><td><strong>VideoPsalm</strong></td></tr>
+          <tr><td>Pre-loaded sermon passage sequence</td><td><strong>VideoPsalm</strong></td></tr>
+          <tr><td>Spontaneous verse mid-sermon</td><td><strong>BibleShow</strong> (faster)</td></tr>
+          <tr><td>Dual-language congregation</td><td><strong>BibleShow</strong> (built-in bilingual)</td></tr>
+          <tr><td>Background videos behind scripture</td><td><strong>VideoPsalm</strong></td></tr>
+          <tr><td>Quick single verse lookup</td><td><strong>BibleShow</strong></td></tr>
+        </table>
+      </div>
+      <div class="tip" style="margin-top:16px;"><strong>Using both together:</strong> Keep VideoPsalm open for worship. Open BibleShow for the sermon. Use <strong>Alt+Tab</strong> to switch. Blank one before switching to the other for a clean transition.</div>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 5 ===== -->
+
+  <!-- SLIDE 17 -->
+  <div class="slide theme-5" data-title="M5 · Pre-Service Checklist">
+    <div class="big-num">5</div>
+    <p class="module-tag">Module 5 — Running a Live Service</p>
+    <h2 class="slide-title">Pre-service <span class="hi">checklist</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="checklist">
+        <div class="check-item"><div class="check-box"></div><div>Connect projector cable firmly — both ends</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Power on projector — fully warm up (2–3 min)</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Set projector to correct input (HDMI 1, VGA…)</div></div>
+        <div class="check-item"><div class="check-box"></div><div><strong>Win+P → Extend mode</strong></div></div>
+        <div class="check-item"><div class="check-box"></div><div>VideoPsalm output set to Display 2</div></div>
+        <div class="check-item"><div class="check-box"></div><div>BibleShow output set to Display 2</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Today's schedule loaded — song order confirmed</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Test slide projected — confirmed on screen</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Text readable from the back of the room</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Keystone correction applied if needed</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 18 -->
+  <div class="slide theme-5" data-title="M5 · Pre-Service Checklist (cont.)">
+    <div class="big-num">5</div>
+    <p class="module-tag">Module 5 — Running a Live Service</p>
+    <h2 class="slide-title">Before you <span class="hi2">start</span> (cont.)</h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <div class="checklist">
+        <div class="check-item"><div class="check-box"></div><div>Welcome/logo slide active on projector</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Unnecessary apps closed (browser, email, Teams)</div></div>
+        <div class="check-item"><div class="check-box"></div><div><strong>Laptop charger plugged in</strong> — never run on battery</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Focus Assist / Do Not Disturb enabled (Win+A)</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Screen saver and sleep disabled</div></div>
+        <div class="check-item"><div class="check-box"></div><div>Windows Update paused</div></div>
+      </div>
+      <div class="tip" style="margin-top:16px;"><strong>Arrive 30–45 minutes early.</strong> Setup always takes longer than expected. Never rush the pre-service checklist.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 19 -->
+  <div class="slide theme-5" data-title="M5 · Worship Flow">
+    <div class="big-num">5</div>
+    <p class="module-tag">Module 5 — Running a Live Service</p>
+    <h2 class="slide-title">Worship <span class="hi3">segment</span> flow</h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>When worship begins, load the first song and project slide 1</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Advance slides with <strong>→ or Space</strong> — stay <strong>one slide ahead</strong> of the singer</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>For repeating choruses, click directly on the chorus thumbnail to jump to it</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>At the end of each song, press <strong>B</strong> (blank), then load the next song</div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>If the worship leader goes off-schedule, use Ctrl+F to search and add the song quickly</div></div>
+      </div>
+      <div class="tip info" style="margin-top:16px;"><strong>The golden rule:</strong> A black screen is never wrong. A wrong slide is always a distraction. When in doubt — press <strong>B</strong>.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 20 -->
+  <div class="slide theme-5" data-title="M5 · Sermon Flow">
+    <div class="big-num">5</div>
+    <p class="module-tag">Module 5 — Running a Live Service</p>
+    <h2 class="slide-title">Sermon <span class="hi">segment</span> flow</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>When sermon begins, press <strong>B</strong> in VideoPsalm to blank</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Bring <strong>BibleShow</strong> to foreground (Alt+Tab)</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Have the opening passage typed and ready before the preacher begins</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>As verses are called out, press <strong>F2</strong>, type reference, press Enter</div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>Use <strong>↑↓ arrows</strong> to move through a passage verse by verse</div></div>
+        <div class="num-item"><div class="num-circle">6</div><div>When sermon ends, press <strong>F5</strong> in BibleShow to blank, switch back to VideoPsalm</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 21 -->
+  <div class="slide theme-5" data-title="M5 · Handling the Unexpected">
+    <div class="big-num">5</div>
+    <p class="module-tag">Module 5 — Running a Live Service</p>
+    <h2 class="slide-title">Handling the <span class="hi3">unexpected</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Problem</th><th>Immediate action</th></tr>
+          <tr><td>Wrong slide is live</td><td>Press <strong>B</strong> immediately → find correct slide</td></tr>
+          <tr><td>Song not in schedule</td><td>Ctrl+F → search → drag to schedule</td></tr>
+          <tr><td>Software freezes</td><td>Press B first if possible, Alt+F4, reopen</td></tr>
+          <tr><td>Projector goes black</td><td>Win+P → re-select Extend</td></tr>
+          <tr><td>Preacher skips passage</td><td>Stay calm, F2 in BibleShow, type new reference</td></tr>
+          <tr><td>Notification on projector</td><td>Win+A → enable Focus Assist</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 6 ===== -->
+
+  <!-- SLIDE 22 -->
+  <div class="slide theme-6" data-title="M6 · Readability Rules">
+    <div class="big-num">6</div>
+    <p class="module-tag">Module 6 — Best Practices</p>
+    <h2 class="slide-title">Readability <span class="hi">rules</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="cards">
+        <div class="card"><div class="card-label">Contrast</div><div class="card-val">White on dark</div><div class="card-desc">Most readable in any lighting. Always use light text on dark backgrounds.</div></div>
+        <div class="card c2"><div class="card-label">Font size</div><div class="card-val">40pt minimum</div><div class="card-desc">For lyrics. 36pt for scripture. Test from the back of the room.</div></div>
+        <div class="card c3"><div class="card-label">Font choice</div><div class="card-val">Sans-serif only</div><div class="card-desc">Arial, Calibri, Segoe UI. Never decorative or script fonts for text.</div></div>
+        <div class="card"><div class="card-label">Density</div><div class="card-val">4 lines max</div><div class="card-desc">Per slide for lyrics. 2–3 verses max for scripture.</div></div>
+      </div>
+      <div class="tip" style="margin-top:16px;"><strong>The 3-second rule:</strong> Every slide should be readable in 3 seconds. If it takes longer, split it across two slides.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 23 -->
+  <div class="slide theme-6" data-title="M6 · Screen Discipline">
+    <div class="big-num">6</div>
+    <p class="module-tag">Module 6 — Best Practices</p>
+    <h2 class="slide-title">Screen <span class="hi2">discipline</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <p class="body-text" style="margin-bottom:16px;">The projector screen should always show either a <strong>slide you intended</strong>, or a <strong>clean black screen</strong>. Nothing else.</p>
+      <p class="body-text" style="margin-bottom:16px;">The congregation should <strong>never</strong> see:</p>
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle" style="background:rgba(255,107,71,0.1);border-color:rgba(255,107,71,0.3);color:var(--accent3)">✕</div><div>Your laptop desktop, taskbar, or icons</div></div>
+        <div class="num-item"><div class="num-circle" style="background:rgba(255,107,71,0.1);border-color:rgba(255,107,71,0.3);color:var(--accent3)">✕</div><div>A browser window, email, or any unrelated application</div></div>
+        <div class="num-item"><div class="num-circle" style="background:rgba(255,107,71,0.1);border-color:rgba(255,107,71,0.3);color:var(--accent3)">✕</div><div>An error message, Windows Update prompt, or crash dialog</div></div>
+        <div class="num-item"><div class="num-circle" style="background:rgba(255,107,71,0.1);border-color:rgba(255,107,71,0.3);color:var(--accent3)">✕</div><div>Your mouse cursor moving across the screen</div></div>
+        <div class="num-item"><div class="num-circle" style="background:rgba(255,107,71,0.1);border-color:rgba(255,107,71,0.3);color:var(--accent3)">✕</div><div>A loading spinner or progress bar</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 24 -->
+  <div class="slide theme-6" data-title="M6 · Preparation & Backup">
+    <div class="big-num">6</div>
+    <p class="module-tag">Module 6 — Best Practices</p>
+    <h2 class="slide-title">Preparation <span class="hi3">&amp; backup</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="two-col">
+        <div>
+          <h3 class="sub-title" style="margin-top:0">Prepare in advance</h3>
+          <div class="num-list">
+            <div class="num-item"><div class="num-circle">1</div><div>Build the full schedule before Sunday</div></div>
+            <div class="num-item"><div class="num-circle">2</div><div>Confirm song order with worship leader</div></div>
+            <div class="num-item"><div class="num-circle">3</div><div>Check spelling of all names and references</div></div>
+            <div class="num-item"><div class="num-circle">4</div><div>Save + backup the schedule file</div></div>
+          </div>
+        </div>
+        <div>
+          <h3 class="sub-title" style="margin-top:0">Have a backup plan</h3>
+          <div class="num-list">
+            <div class="num-item"><div class="num-circle">1</div><div>Keep a printed song sheet</div></div>
+            <div class="num-item"><div class="num-circle">2</div><div>Know how to restart software quickly</div></div>
+            <div class="num-item"><div class="num-circle">3</div><div>Have the logo slide as your safe fallback</div></div>
+            <div class="num-item"><div class="num-circle">4</div><div>Know where the projector power is</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODULE 7 ===== -->
+
+  <!-- SLIDE 25 -->
+  <div class="slide theme-7" data-title="M7 · Common Problems">
+    <div class="big-num">7</div>
+    <p class="module-tag">Module 7 — Troubleshooting</p>
+    <h2 class="slide-title">Common <span class="hi">problems</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Problem</th><th>First thing to check</th></tr>
+          <tr><td><strong>"No Signal"</strong> on projector</td><td>Cable firmly plugged in? Correct input selected? Win+P → Extend?</td></tr>
+          <tr><td>Output on laptop, not projector</td><td>Settings → Screens → set Presentation Screen to Display 2</td></tr>
+          <tr><td>Text is blurry</td><td>Resolution mismatch — match output to projector native. Also check projector focus ring.</td></tr>
+          <tr><td>Image is trapezoidal</td><td>Keystone distortion — use projector Keystone button or adjust mount angle</td></tr>
+          <tr><td>Software is lagging</td><td>Plug in charger. Close other apps. Reduce background video to 720p.</td></tr>
+          <tr><td>Notifications on projector</td><td>Enable Focus Assist. Ensure laptop is the main display, not projector.</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 26 -->
+  <div class="slide theme-7" data-title="M7 · No Signal Fix">
+    <div class="big-num">7</div>
+    <p class="module-tag">Module 7 — Troubleshooting</p>
+    <h2 class="slide-title">Fixing <span class="hi3">"No Signal"</span></h2>
+    <div class="divider d3"></div>
+    <div class="slide-inner">
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>Check cable is firmly plugged at both ends</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>On projector remote, press <strong>Source / Input</strong> → cycle through inputs until you find HDMI 1 or VGA</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Press <strong>Win+P</strong> on laptop → reselect <strong>Extend</strong></div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>Unplug and replug the cable</div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>Try a different cable if available — cables do fail</div></div>
+        <div class="num-item"><div class="num-circle">6</div><div>Restart laptop with projector cable already connected</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 27 -->
+  <div class="slide theme-7" data-title="M7 · Nuclear Reset">
+    <div class="big-num">7</div>
+    <p class="module-tag">Module 7 — Troubleshooting</p>
+    <h2 class="slide-title">The <span class="hi">nuclear</span> reset</h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <p class="body-text" style="margin-bottom:16px;">When everything has gone wrong and you cannot identify the cause — do this. Resolves ~80% of unexplained projection failures.</p>
+      <div class="num-list">
+        <div class="num-item"><div class="num-circle">1</div><div>Press <strong>Win+P → PC Screen Only</strong> (stops projector seeing anything)</div></div>
+        <div class="num-item"><div class="num-circle">2</div><div>Close VideoPsalm and BibleShow</div></div>
+        <div class="num-item"><div class="num-circle">3</div><div>Unplug and replug the projector cable</div></div>
+        <div class="num-item"><div class="num-circle">4</div><div>Press <strong>Win+P → Extend</strong></div></div>
+        <div class="num-item"><div class="num-circle">5</div><div>Reopen VideoPsalm / BibleShow</div></div>
+        <div class="num-item"><div class="num-circle">6</div><div>Re-configure output screen → resume</div></div>
+      </div>
+      <div class="tip warn" style="margin-top:16px;"><strong>This resets the entire display chain from Windows downward.</strong> If this doesn't work, restart the laptop.</div>
+    </div>
+  </div>
+
+  <!-- ===== QUICK REFERENCE ===== -->
+
+  <!-- SLIDE 28 -->
+  <div class="slide theme-8" data-title="Quick Ref · Win+P Modes">
+    <div class="big-num">REF</div>
+    <p class="module-tag">Quick Reference</p>
+    <h2 class="slide-title">Win+P <span class="hi">quick ref</span></h2>
+    <div class="divider"></div>
+    <div class="slide-inner">
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Mode</th><th>What it does</th><th>When to use</th></tr>
+          <tr><td>PC Screen Only</td><td>Laptop only, projector blank</td><td>Setup, private work</td></tr>
+          <tr><td>Duplicate</td><td>Both show the same</td><td>Never in live service</td></tr>
+          <tr><td><strong>Extend ✓</strong></td><td>Independent screens</td><td><strong>Always during service</strong></td></tr>
+          <tr><td>Second Screen Only</td><td>Projector only</td><td>Dedicated projection PC</td></tr>
+        </table>
+      </div>
+      <div class="tbl-wrap" style="margin-top:16px;">
+        <table>
+          <tr><th>Display setting</th><th>Value</th></tr>
+          <tr><td>Main display</td><td>Display 1 (your laptop)</td></tr>
+          <tr><td>Projector display</td><td>Display 2</td></tr>
+          <tr><td>Projector resolution</td><td>Match projector native (e.g. 1920×1080)</td></tr>
+          <tr><td>Refresh rate</td><td>60 Hz</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 29 -->
+  <div class="slide theme-8" data-title="Quick Ref · All Shortcuts">
+    <div class="big-num">REF</div>
+    <p class="module-tag">Quick Reference</p>
+    <h2 class="slide-title">All <span class="hi2">shortcuts</span></h2>
+    <div class="divider d2"></div>
+    <div class="slide-inner">
+      <div class="two-col">
+        <div>
+          <p style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px;">VideoPsalm</p>
+          <div class="shortcuts" style="grid-template-columns:1fr;">
+            <div class="shortcut-row"><kbd>B</kbd><span class="shortcut-desc">Black screen</span></div>
+            <div class="shortcut-row"><kbd>W</kbd><span class="shortcut-desc">White screen</span></div>
+            <div class="shortcut-row"><kbd>L</kbd><span class="shortcut-desc">Logo screen</span></div>
+            <div class="shortcut-row"><kbd>F5</kbd><span class="shortcut-desc">Go live</span></div>
+            <div class="shortcut-row"><kbd>Esc</kbd><span class="shortcut-desc">Stop presentation</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+F</kbd><span class="shortcut-desc">Search songs</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+S</kbd><span class="shortcut-desc">Save schedule</span></div>
+            <div class="shortcut-row"><kbd>← →</kbd><span class="shortcut-desc">Prev / Next slide</span></div>
+          </div>
+        </div>
+        <div>
+          <p style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:10px;">BibleShow</p>
+          <div class="shortcuts" style="grid-template-columns:1fr;">
+            <div class="shortcut-row"><kbd>F2</kbd><span class="shortcut-desc">Focus search box</span></div>
+            <div class="shortcut-row"><kbd>Enter</kbd><span class="shortcut-desc">Project verse</span></div>
+            <div class="shortcut-row"><kbd>↑ / ↓</kbd><span class="shortcut-desc">Prev / Next verse</span></div>
+            <div class="shortcut-row"><kbd>F5</kbd><span class="shortcut-desc">Blank screen</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+D</kbd><span class="shortcut-desc">Toggle display</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+B</kbd><span class="shortcut-desc">Switch translation</span></div>
+            <div class="shortcut-row"><kbd>Ctrl+F</kbd><span class="shortcut-desc">Keyword search</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 30: END -->
+  <div class="slide slide-cover theme-8" data-title="End">
+    <h1 class="cover-title" style="font-size:clamp(40px,6vw,80px);">You're <span>ready.</span></h1>
+    <p class="cover-sub" style="max-width:480px;margin-top:20px;line-height:1.7;">Arrive early. Plug in your charger. Press <span style="color:var(--accent);">Win+P → Extend</span>. Set the output to Display 2. And remember — when in doubt, press <span style="color:var(--accent);">B</span>.</p>
+    <div class="cover-dots" style="margin-top:40px;">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <p style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:48px;letter-spacing:0.1em;">PROJECTION CRASH COURSE · COMPLETE</p>
+  </div>
+
+</div><!-- /slides -->
+
+<script>
+  // Cursor
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+  });
+  document.querySelectorAll('a,button,[onclick],.nav-btn,.toc-item,#menu-btn').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursor.style.width='20px'; cursor.style.height='20px'; });
+    el.addEventListener('mouseleave', () => { cursor.style.width='12px'; cursor.style.height='12px'; });
+  });
+
+  // Slides
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let current = 0;
+  let animating = false;
+
+  function updateUI() {
+    const total = slides.length;
+    document.getElementById('slide-counter').textContent =
+      String(current + 1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    document.getElementById('progress-fill').style.width =
+      ((current + 1) / total * 100) + '%';
+    document.getElementById('btn-prev').classList.toggle('hidden', current === 0);
+    document.getElementById('btn-next').classList.toggle('hidden', current === total - 1);
+
+    // Update TOC
+    document.querySelectorAll('.toc-item').forEach((item, i) => {
+      item.classList.toggle('current', i === current);
+    });
+  }
+
+  function goTo(index) {
+    if (animating || index === current || index < 0 || index >= slides.length) return;
+    animating = true;
+
+    const prev = slides[current];
+    const next = slides[index];
+    const dir = index > current ? 1 : -1;
+
+    prev.classList.remove('active');
+    prev.classList.add('exit');
+
+    next.style.transform = `translateY(${dir * 30}px)`;
+    next.style.opacity = '0';
+    next.classList.add('active');
+    next.style.pointerEvents = 'none';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        next.style.transform = 'translateY(0)';
+        next.style.opacity = '1';
+        setTimeout(() => {
+          prev.classList.remove('exit');
+          next.style.transform = '';
+          next.style.opacity = '';
+          next.style.pointerEvents = '';
+          animating = false;
+        }, 520);
+      });
+    });
+
+    current = index;
+    updateUI();
+  }
+
+  function changeSlide(dir) { goTo(current + dir); }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+      e.preventDefault(); changeSlide(1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault(); changeSlide(-1);
+    } else if (e.key === 'Escape') {
+      closeToc();
+    } else if (e.key === 'Home') {
+      goTo(0);
+    } else if (e.key === 'End') {
+      goTo(slides.length - 1);
+    }
+  });
+
+  // Touch swipe
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      changeSlide(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+
+  // TOC
+  function buildToc() {
+    const list = document.getElementById('toc-list');
+    slides.forEach((slide, i) => {
+      const title = slide.dataset.title || 'Slide ' + (i+1);
+      const item = document.createElement('div');
+      item.className = 'toc-item' + (i === 0 ? ' current' : '');
+      item.innerHTML = `<span class="toc-num">${String(i+1).padStart(2,'0')}</span><span class="toc-label">${title}</span>`;
+      item.addEventListener('click', () => { goTo(i); closeToc(); });
+      list.appendChild(item);
+    });
+  }
+
+  let tocOpen = false;
+  function toggleMenu() {
+    tocOpen = !tocOpen;
+    document.getElementById('toc-panel').classList.toggle('open', tocOpen);
+  }
+  function closeToc() {
+    tocOpen = false;
+    document.getElementById('toc-panel').classList.remove('open');
+  }
+  document.getElementById('toc-panel').addEventListener('click', e => {
+    if (e.target === document.getElementById('toc-panel')) closeToc();
+  });
+
+  // Click outside TOC
+  document.addEventListener('click', e => {
+    if (tocOpen && !document.getElementById('toc-panel').contains(e.target) && !document.getElementById('menu-btn').contains(e.target)) {
+      closeToc();
+    }
+  });
+
+  buildToc();
+  updateUI();
+</script>
+</body>
+</html>
