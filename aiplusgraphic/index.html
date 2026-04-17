@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graphic Design in the Age of AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0e0e11;
+  --paper:#f5f2ec;
+  --paper2:#ede9e0;
+  --paper3:#e3dfd4;
+  --accent:#e8401c;
+  --accent2:#1c6fe8;
+  --accent3:#12a05c;
+  --gold:#c8920a;
+  --muted:#8a8578;
+  --border:rgba(14,14,17,0.12);
+  --font-display:'DM Serif Display',serif;
+  --font-body:'Outfit',sans-serif;
+  --font-mono:'DM Mono',monospace;
+}
+
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);font-family:var(--font-body)}
+
+/* ── Slides ── */
+#deck{width:100vw;height:100vh;position:relative;overflow:hidden}
+
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(24px,5vw,64px) clamp(20px,6vw,80px);
+  opacity:0;pointer-events:none;
+  transition:opacity .45s ease,transform .45s cubic-bezier(.4,0,.2,1);
+  transform:translateY(24px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.slide.active{opacity:1;pointer-events:all;transform:translateY(0)}
+.slide.exit{opacity:0;transform:translateY(-24px)}
+
+/* backgrounds */
+.bg-paper{background:var(--paper)}
+.bg-ink{background:var(--ink)}
+.bg-warm{background:#1a1208}
+.bg-red{background:#1a0800}
+.bg-blue{background:#05101a}
+.bg-green{background:#061410}
+
+/* grain overlay */
+.slide::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  opacity:.025;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+.slide>*{position:relative;z-index:1}
+
+/* ── Typography ── */
+.tag{
+  font-family:var(--font-mono);font-size:clamp(9px,1.2vw,11px);
+  letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:clamp(10px,2vh,18px);
+  display:flex;align-items:center;gap:10px;
+}
+.tag::before{content:'';display:inline-block;width:20px;height:1px;background:currentColor}
+.tag.light{color:rgba(245,242,236,.45)}
+
+.h-display{
+  font-family:var(--font-display);
+  font-size:clamp(32px,6.5vw,88px);
+  line-height:.95;letter-spacing:-.02em;
+  color:var(--ink);margin-bottom:clamp(14px,2.5vh,28px);
+}
+.h-display.light{color:var(--paper)}
+.h-display em{color:var(--accent);font-style:italic}
+.h-display .a2{color:var(--accent2)}
+.h-display .a3{color:var(--accent3)}
+.h-display .gold{color:var(--gold)}
+
+.h-section{
+  font-family:var(--font-display);
+  font-size:clamp(22px,4vw,52px);
+  line-height:1.05;color:var(--paper);
+  margin-bottom:clamp(10px,2vh,20px);
+}
+.h-section em{color:var(--accent);font-style:italic}
+.h-section .a2{color:var(--accent2)}
+.h-section .a3{color:var(--accent3)}
+.h-section .gold{color:var(--gold)}
+.h-section.ink{color:var(--ink)}
+
+.body{
+  font-size:clamp(13px,1.7vw,17px);line-height:1.65;
+  color:rgba(14,14,17,.72);max-width:680px;
+}
+.body.light{color:rgba(245,242,236,.72)}
+.body strong{color:var(--accent);font-weight:600}
+.body .b2{color:var(--accent2);font-weight:600}
+.body .b3{color:var(--accent3);font-weight:600}
+
+/* ── Rule / divider ── */
+.rule{width:36px;height:2.5px;background:var(--accent);margin-bottom:clamp(10px,2vh,20px);flex-shrink:0}
+.rule.r2{background:var(--accent2)}
+.rule.r3{background:var(--accent3)}
+.rule.rg{background:var(--gold)}
+
+/* ── Inner scroll wrapper ── */
+.inner{
+  max-height:calc(100vh - clamp(48px,10vh,128px));
+  overflow-y:auto;padding-right:8px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;
+}
+.inner::-webkit-scrollbar{width:3px}
+.inner::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px}
+.inner.ink-scroll{scrollbar-color:rgba(14,14,17,.15) transparent}
+.inner.ink-scroll::-webkit-scrollbar-thumb{background:rgba(14,14,17,.2)}
+
+/* ── Prompt block ── */
+.prompt-wrap{position:relative;margin:10px 0}
+.prompt-block{
+  background:rgba(14,14,17,.85);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  padding:clamp(14px,2vw,20px) clamp(14px,2vw,20px) clamp(14px,2vw,20px) clamp(14px,2vw,20px);
+  font-family:var(--font-mono);
+  font-size:clamp(11px,1.3vw,13.5px);
+  line-height:1.7;
+  color:rgba(245,242,236,.82);
+  white-space:pre-wrap;word-break:break-word;
+  padding-right:56px;
+}
+.prompt-block.on-paper{
+  background:rgba(14,14,17,.06);
+  border-color:rgba(14,14,17,.12);
+  color:rgba(14,14,17,.78);
+}
+.prompt-block .ph{color:var(--gold);font-style:italic}
+.prompt-block .kw{color:#7dd3b0;font-weight:500}
+
+.copy-btn{
+  position:absolute;top:10px;right:10px;
+  width:32px;height:32px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:.2s;flex-shrink:0;
+  color:rgba(245,242,236,.5);
+}
+.copy-btn:hover{background:rgba(232,64,28,.15);border-color:rgba(232,64,28,.4);color:var(--accent)}
+.copy-btn.copied{background:rgba(18,160,92,.15);border-color:rgba(18,160,92,.4);color:var(--accent3)}
+.copy-btn.on-paper{background:rgba(14,14,17,.06);border-color:rgba(14,14,17,.15);color:var(--muted)}
+.copy-btn.on-paper:hover{background:rgba(232,64,28,.08);border-color:rgba(232,64,28,.3);color:var(--accent)}
+.copy-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.prompt-label{
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--accent);
+  margin-bottom:6px;display:block;
+}
+.prompt-label.l2{color:var(--accent2)}
+.prompt-label.l3{color:var(--accent3)}
+.prompt-label.lg{color:var(--gold)}
+
+/* ── Cards ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px;margin-top:10px}
+.card{
+  background:rgba(245,242,236,.04);
+  border:1px solid rgba(245,242,236,.1);
+  border-radius:10px;padding:clamp(12px,1.8vw,18px);
+  transition:.2s;
+}
+.card:hover{border-color:rgba(245,242,236,.2);background:rgba(245,242,236,.06)}
+.card.ink-card{background:rgba(14,14,17,.04);border-color:rgba(14,14,17,.1)}
+.card.ink-card:hover{border-color:rgba(14,14,17,.2)}
+.card-num{font-family:var(--font-display);font-size:clamp(28px,4vw,44px);color:var(--accent);opacity:.35;line-height:1;margin-bottom:6px}
+.card-title{font-size:clamp(12px,1.4vw,14px);font-weight:700;color:var(--paper);margin-bottom:4px;letter-spacing:.01em}
+.card-title.ink{color:var(--ink)}
+.card-body{font-family:var(--font-mono);font-size:clamp(10px,1.1vw,12px);color:rgba(245,242,236,.5);line-height:1.5}
+.card-body.ink{color:var(--muted)}
+.card .accent-bar{width:24px;height:2px;border-radius:1px;margin-bottom:8px}
+
+/* ── List items ── */
+.list{list-style:none;margin-top:10px}
+.list li{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:8px 0;border-bottom:1px solid rgba(245,242,236,.07);
+  font-size:clamp(12px,1.5vw,15px);color:rgba(245,242,236,.75);
+  line-height:1.5;
+}
+.list.ink-list li{border-color:rgba(14,14,17,.08);color:rgba(14,14,17,.7)}
+.list li:last-child{border-bottom:none}
+.list li .dot{
+  width:20px;height:20px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:9px;font-weight:500;
+  margin-top:1px;
+}
+.dot-r{background:rgba(232,64,28,.15);border:1px solid rgba(232,64,28,.3);color:var(--accent)}
+.dot-b{background:rgba(28,111,232,.15);border:1px solid rgba(28,111,232,.3);color:var(--accent2)}
+.dot-g{background:rgba(18,160,92,.15);border:1px solid rgba(18,160,92,.3);color:var(--accent3)}
+.dot-y{background:rgba(200,146,10,.15);border:1px solid rgba(200,146,10,.3);color:var(--gold)}
+.dot-x{background:rgba(255,60,60,.15);border:1px solid rgba(255,60,60,.3);color:#ff5b5b;font-size:12px}
+.list li strong{color:var(--paper);font-weight:600}
+.list.ink-list li strong{color:var(--ink)}
+
+/* ── Two column ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,3vw,40px);align-items:start}
+@media(max-width:680px){.two-col{grid-template-columns:1fr}}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:clamp(11px,1.3vw,14px)}
+th{text-align:left;padding:8px 12px;background:rgba(232,64,28,.12);color:var(--accent);
+   font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+   border-bottom:1px solid rgba(232,64,28,.25)}
+td{padding:9px 12px;border-bottom:1px solid rgba(245,242,236,.06);color:rgba(245,242,236,.75);line-height:1.4;vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── Tip box ── */
+.tip{
+  border-left:3px solid var(--accent);
+  padding:clamp(10px,1.5vw,14px) clamp(12px,1.8vw,18px);
+  background:rgba(232,64,28,.07);
+  border-radius:0 8px 8px 0;margin-top:12px;
+  font-size:clamp(11px,1.3vw,14px);color:rgba(245,242,236,.75);line-height:1.6;
+  font-family:var(--font-mono);
+}
+.tip strong{color:var(--accent)}
+.tip.t2{border-color:var(--accent2);background:rgba(28,111,232,.07)}
+.tip.t2 strong{color:var(--accent2)}
+.tip.t3{border-color:var(--accent3);background:rgba(18,160,92,.07)}
+.tip.t3 strong{color:var(--accent3)}
+.tip.tg{border-color:var(--gold);background:rgba(200,146,10,.07)}
+.tip.tg strong{color:var(--gold)}
+.tip.on-paper{background:rgba(232,64,28,.05);color:rgba(14,14,17,.72)}
+.tip.on-paper strong{color:var(--accent)}
+
+/* ── Step pill ── */
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.step-pill{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(245,242,236,.05);
+  border:1px solid rgba(245,242,236,.1);
+  border-radius:30px;padding:6px 14px 6px 8px;
+  font-size:clamp(11px,1.3vw,13px);color:rgba(245,242,236,.75);
+}
+.step-n{
+  width:22px;height:22px;border-radius:50%;background:var(--accent);
+  color:#fff;font-weight:700;font-size:11px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+/* ── Badge ── */
+.badge{
+  display:inline-block;font-family:var(--font-mono);font-size:10px;
+  padding:3px 10px;border-radius:20px;letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.badge-r{background:rgba(232,64,28,.15);color:var(--accent);border:1px solid rgba(232,64,28,.3)}
+.badge-g{background:rgba(18,160,92,.15);color:var(--accent3);border:1px solid rgba(18,160,92,.3)}
+.badge-b{background:rgba(28,111,232,.15);color:var(--accent2);border:1px solid rgba(28,111,232,.3)}
+
+/* ── Example chips ── */
+.examples{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ex-chip{
+  font-family:var(--font-mono);font-size:clamp(10px,1.1vw,12px);
+  padding:4px 12px;border-radius:6px;
+  background:rgba(200,146,10,.1);color:var(--gold);
+  border:1px solid rgba(200,146,10,.25);
+}
+
+/* ── Big number bg ── */
+.bg-num{
+  position:absolute;bottom:-10px;right:clamp(16px,4vw,40px);
+  font-family:var(--font-display);
+  font-size:clamp(80px,16vw,200px);
+  color:rgba(245,242,236,.03);
+  line-height:1;pointer-events:none;user-select:none;z-index:0;
+  letter-spacing:-.05em;
+}
+.bg-num.ink{color:rgba(14,14,17,.04)}
+
+/* ── Cover special ── */
+.cover-subtitle{
+  font-family:var(--font-mono);font-size:clamp(11px,1.4vw,14px);
+  color:var(--muted);letter-spacing:.08em;margin-top:16px;
+  display:flex;flex-wrap:wrap;gap:16px;
+}
+.cover-subtitle span{color:rgba(245,242,236,.4)}
+.cover-num-row{
+  font-family:var(--font-mono);font-size:clamp(10px,1.1vw,12px);
+  color:rgba(245,242,236,.25);margin-top:40px;letter-spacing:.1em;
+  display:flex;gap:20px;flex-wrap:wrap;
+}
+
+/* ── Nav ── */
+#nav-prev,#nav-next{
+  position:fixed;top:50%;transform:translateY(-50%);
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(245,242,236,.05);
+  border:1px solid rgba(245,242,236,.1);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:200;
+  transition:.2s;color:rgba(245,242,236,.4);font-size:16px;user-select:none;
+}
+#nav-prev:hover,#nav-next:hover{background:rgba(232,64,28,.15);border-color:rgba(232,64,28,.4);color:var(--accent)}
+#nav-prev{left:10px}#nav-next{right:10px}
+#nav-prev.off,#nav-next.off{opacity:0;pointer-events:none}
+
+/* ── Progress ── */
+#prog{position:fixed;bottom:0;left:0;right:0;height:2px;background:rgba(255,255,255,.05);z-index:300}
+#prog-fill{height:100%;background:var(--accent);transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* ── Counter ── */
+#counter{
+  position:fixed;bottom:10px;right:clamp(12px,3vw,24px);
+  font-family:var(--font-mono);font-size:10px;
+  color:rgba(245,242,236,.25);z-index:300;letter-spacing:.1em;
+}
+
+/* ── Menu ── */
+#menu-btn{
+  position:fixed;top:clamp(10px,2vw,16px);left:clamp(10px,2vw,16px);
+  width:34px;height:34px;border-radius:8px;
+  background:rgba(245,242,236,.05);border:1px solid rgba(245,242,236,.1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  cursor:pointer;z-index:400;transition:.2s;
+}
+#menu-btn:hover{background:rgba(232,64,28,.12);border-color:rgba(232,64,28,.3)}
+#menu-btn span{width:14px;height:1.5px;background:rgba(245,242,236,.5);border-radius:1px;transition:.2s}
+#menu-btn:hover span{background:var(--accent)}
+
+#toc{
+  position:fixed;top:0;left:0;bottom:0;width:min(280px,82vw);
+  background:rgba(12,11,14,.97);border-right:1px solid rgba(245,242,236,.08);
+  z-index:390;padding:clamp(52px,8vh,72px) 20px 24px;
+  overflow-y:auto;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  backdrop-filter:blur(20px);
+}
+#toc.open{transform:translateX(0)}
+.toc-head{font-family:var(--font-mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;padding-left:4px}
+.toc-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:8px 6px;border-radius:6px;cursor:pointer;transition:.15s;margin-bottom:2px;
+}
+.toc-item:hover{background:rgba(245,242,236,.04)}
+.toc-item.cur{background:rgba(232,64,28,.1)}
+.toc-item.cur .toc-n{color:var(--accent)}
+.toc-item.cur .toc-t{color:var(--paper)}
+.toc-n{font-family:var(--font-mono);font-size:10px;color:var(--muted);min-width:22px;padding-top:1px;flex-shrink:0}
+.toc-t{font-size:12px;font-weight:500;color:rgba(245,242,236,.55);line-height:1.3}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--accent3);color:#fff;
+  font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;
+  padding:7px 18px;border-radius:20px;z-index:500;
+  opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Hint ── */
+#hint{
+  position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  font-family:var(--font-mono);font-size:10px;color:rgba(245,242,236,.2);
+  letter-spacing:.1em;z-index:300;white-space:nowrap;
+  animation:hinttout 1s 5s forwards;
+}
+@keyframes hinttout{to{opacity:0}}
+
+/* ── Highlight bar for wrong/right ── */
+.wrong{
+  font-family:var(--font-mono);font-size:clamp(11px,1.3vw,13px);
+  padding:8px 14px;border-radius:8px;margin-bottom:6px;line-height:1.5;
+  background:rgba(255,60,60,.08);border-left:3px solid #ff5b5b;color:rgba(245,242,236,.7);
+}
+.right{
+  font-family:var(--font-mono);font-size:clamp(11px,1.3vw,13px);
+  padding:8px 14px;border-radius:8px;margin-bottom:6px;line-height:1.5;
+  background:rgba(18,160,92,.08);border-left:3px solid var(--accent3);color:rgba(245,242,236,.7);
+}
+.wrong-label,.right-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;font-family:var(--font-mono)}
+.wrong-label{color:#ff5b5b}
+.right-label{color:var(--accent3)}
+
+/* Pipeline box */
+.pipeline{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));
+  gap:8px;margin-top:12px;
+}
+.pip-item{
+  background:rgba(245,242,236,.04);border:1px solid rgba(245,242,236,.08);
+  border-radius:8px;padding:12px;text-align:center;transition:.2s;
+}
+.pip-item:hover{border-color:rgba(232,64,28,.3)}
+.pip-n{font-family:var(--font-display);font-size:clamp(22px,3vw,34px);color:var(--accent);opacity:.5;line-height:1}
+.pip-text{font-size:clamp(10px,1.2vw,12px);color:rgba(245,242,236,.6);margin-top:4px;line-height:1.3}
+</style>
+</head>
+<body>
+
+<!-- Menu -->
+<div id="menu-btn" onclick="toggleToc()"><span></span><span></span><span></span></div>
+<div id="toc"><p class="toc-head">Slides</p><div id="toc-list"></div></div>
+
+<!-- Nav -->
+<div id="nav-prev" onclick="go(-1)">&#8592;</div>
+<div id="nav-next" onclick="go(1)">&#8594;</div>
+
+<!-- Progress -->
+<div id="prog"><div id="prog-fill"></div></div>
+<div id="counter">01/34</div>
+<div id="hint">← → keys · swipe · click arrows</div>
+<div id="toast">Copied!</div>
+
+<!-- ════════════════════════════════════════════
+     SLIDES
+════════════════════════════════════════════ -->
+<div id="deck">
+
+<!-- ══ 0 · COVER ══ -->
+<div class="slide bg-ink active" data-t="Cover">
+  <div class="bg-num">AI</div>
+  <p class="tag light">Workshop · 2025</p>
+  <h1 class="h-display light" style="max-width:760px">Graphic Design<br>in the <em>Age of AI</em></h1>
+  <div class="rule"></div>
+  <p class="body light" style="max-width:560px">A practical system for using AI as your design thinking partner — without your work looking like everyone else's.</p>
+  <div class="cover-num-row">
+    <span>PART 01 · PROMPT ENGINEERING</span>
+    <span>PART 02 · AI-POWERED POSTER SYSTEM</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+  PART 1: PROMPT ENGINEERING
+══════════════════════════ -->
+
+<!-- ══ 1 · What is Prompt Engineering ══ -->
+<div class="slide bg-ink" data-t="What is Prompt Engineering?">
+  <div class="bg-num" style="font-size:clamp(60px,12vw,160px)">PE</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">What is <em>Prompt Engineering?</em></h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light">Prompt engineering is the skill of <strong>writing instructions to AI</strong> that produce the exact output you need — instead of generic, vague, or wrong results.</p>
+    <p class="body light" style="margin-top:12px">Think of AI as a very smart assistant who does exactly what you say — but takes you literally. <strong>Better instructions = better results.</strong></p>
+    <div class="tip tg" style="margin-top:16px">
+      <strong>Analogy:</strong> A bad creative brief gives you a bad design. A sharp creative brief gives you a sharp design. Prompting works the same way.
+    </div>
+    <div class="cards" style="margin-top:16px">
+      <div class="card"><div class="accent-bar" style="background:var(--accent)"></div><div class="card-title">Vague prompt</div><div class="card-body">"Make a poster" → generic, forgettable output</div></div>
+      <div class="card"><div class="accent-bar" style="background:var(--accent3)"></div><div class="card-title">Engineered prompt</div><div class="card-body">Role + context + constraints + format → precise, useful output</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 2 · The 5 Elements of a Good Prompt ══ -->
+<div class="slide bg-warm" data-t="5 Elements of a Good Prompt">
+  <div class="bg-num">5</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">The <em>5 Elements</em> of a strong prompt</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <ul class="list">
+      <li><div class="dot dot-r">R</div><div><strong>Role</strong> — Tell AI who to be. "Act as a senior graphic designer." "Act as a brand strategist."</div></li>
+      <li><div class="dot dot-b">C</div><div><strong>Context</strong> — Give the background. What is this for? Who is the audience? What is the goal?</div></li>
+      <li><div class="dot dot-g">T</div><div><strong>Task</strong> — State clearly what you want. "Give me 5 poster concepts." "Write 3 headline variations."</div></li>
+      <li><div class="dot dot-y">F</div><div><strong>Format</strong> — Tell it how to structure the answer. Numbered list, bullet points, table, paragraph.</div></li>
+      <li><div class="dot dot-r">C</div><div><strong>Constraints</strong> — What to avoid or limit. "Avoid generic ideas." "No more than 6 words per headline."</div></li>
+    </ul>
+    <div class="tip tg" style="margin-top:14px"><strong>Remember:</strong> You don't need all 5 every time. But the more you include, the sharper the output.</div>
+  </div>
+</div>
+
+<!-- ══ 3 · Role Prompting ══ -->
+<div class="slide bg-blue" data-t="Role Prompting — Examples">
+  <div class="bg-num">R</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section"><span class="a2">Role</span> prompting</h2>
+  <div class="rule r2"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Assigning a role dramatically changes the quality and perspective of the response. Compare:</p>
+    <div class="wrong-label">❌ No role</div>
+    <div class="wrong">"Give me ideas for a church poster."</div>
+    <div class="right-label">✅ With role</div>
+    <div class="right">"Act as a senior brand designer specialising in event marketing. Give me 5 bold visual concepts for a church evangelism poster targeting young adults aged 18–30."</div>
+    <p class="body light" style="margin-top:16px;margin-bottom:10px">Useful roles for graphic designers:</p>
+    <ul class="list">
+      <li><div class="dot dot-b">→</div><div>"Act as a senior brand designer"</div></li>
+      <li><div class="dot dot-b">→</div><div>"Act as a creative director at a top agency"</div></li>
+      <li><div class="dot dot-b">→</div><div>"Act as a typography expert"</div></li>
+      <li><div class="dot dot-b">→</div><div>"Act as a color theory specialist"</div></li>
+      <li><div class="dot dot-b">→</div><div>"Act as a harsh design critic"</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ 4 · Context & Specificity ══ -->
+<div class="slide bg-ink" data-t="Context & Specificity">
+  <div class="bg-num">C</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">Context &amp; <em>specificity</em></h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">AI cannot read your mind. The more context you give, the more useful the output.</p>
+    <div class="wrong-label">❌ Too vague</div>
+    <div class="wrong">"Give me color palette ideas."</div>
+    <div class="right-label">✅ With context</div>
+    <div class="right">"Give me 3 color palette options for a luxury real estate brand targeting high-income buyers in Nairobi. Include hex codes. The tone should feel premium, modern, and trustworthy."</div>
+    <div class="tip t2" style="margin-top:14px">
+      <strong>Context checklist:</strong> Who is it for? What is the goal? What tone? What industry? What platform (print, Instagram, billboard)?
+    </div>
+    <div class="examples" style="margin-top:14px">
+      <span class="ex-chip">Target audience</span>
+      <span class="ex-chip">Event type</span>
+      <span class="ex-chip">Tone / mood</span>
+      <span class="ex-chip">Industry</span>
+      <span class="ex-chip">Platform / size</span>
+      <span class="ex-chip">Colour direction</span>
+      <span class="ex-chip">Budget level</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 5 · Constraints ══ -->
+<div class="slide bg-red" data-t="Constraints — Keep AI Focused">
+  <div class="bg-num">C</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section"><em>Constraints</em> keep AI focused</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Without constraints, AI gives you safe, generic answers. Constraints force creativity and relevance.</p>
+    <div class="wrong-label">❌ No constraints</div>
+    <div class="wrong">"Suggest font pairings for my poster."</div>
+    <div class="right-label">✅ With constraints</div>
+    <div class="right">"Suggest 3 font pairings for a bold, dark-themed music event poster. Avoid overused fonts like Bebas Neue or Montserrat. Each pairing must include a headline font and a body font. Explain why they work together in one sentence."</div>
+    <p class="body light" style="margin-top:16px;margin-bottom:10px">Useful constraint phrases:</p>
+    <ul class="list">
+      <li><div class="dot dot-r">→</div><div>"Avoid generic ideas"</div></li>
+      <li><div class="dot dot-r">→</div><div>"No more than [X] words"</div></li>
+      <li><div class="dot dot-r">→</div><div>"Do not suggest [X]"</div></li>
+      <li><div class="dot dot-r">→</div><div>"Each option must be distinct from the others"</div></li>
+      <li><div class="dot dot-r">→</div><div>"Be brutally honest" / "Be concise"</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ 6 · Format Control ══ -->
+<div class="slide bg-green" data-t="Controlling Output Format">
+  <div class="bg-num">F</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">Controlling <span class="a3">output format</span></h2>
+  <div class="rule r3"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Tell AI exactly how to structure its response — it changes how usable the output is.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>You want</th><th>Say this in your prompt</th></tr>
+        <tr><td>A numbered list</td><td>"Give me a numbered list of 5..."</td></tr>
+        <tr><td>A comparison</td><td>"Present as a table with columns: Option / Pros / Cons"</td></tr>
+        <tr><td>Quick answers</td><td>"Be brief. One sentence per item."</td></tr>
+        <tr><td>Detailed explanation</td><td>"Explain each one in 2–3 sentences with examples."</td></tr>
+        <tr><td>Headline copy</td><td>"Output as headlines only. No explanations."</td></tr>
+        <tr><td>A repeatable template</td><td>"Format it as a reusable prompt template with [placeholders]."</td></tr>
+      </table>
+    </div>
+    <div class="tip t3" style="margin-top:12px"><strong>Pro move:</strong> Ask AI to give you output in a format you can copy directly into your workflow — Photoshop notes, a brief doc, a client email.</div>
+  </div>
+</div>
+
+<!-- ══ 7 · Chain of Thought Prompting ══ -->
+<div class="slide bg-warm" data-t="Chain-of-Thought Prompting">
+  <div class="bg-num">→</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">Chain-of-thought <em>prompting</em></h2>
+  <div class="rule rg"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Ask AI to reason through a problem step by step — don't just ask for the answer. This gets far better results for complex design decisions.</p>
+    <div class="wrong-label">❌ Direct question</div>
+    <div class="wrong">"What layout should I use for this poster?"</div>
+    <div class="right-label">✅ Chain of thought</div>
+    <div class="right">"I'm designing a concert poster. The headline is 'ONE NIGHT ONLY', the date is 14 June, and the artist name is KIMANI. Think through the visual hierarchy step by step: what should be largest, what should be secondary, and where should the supporting details go? Then give me a final layout recommendation."</div>
+    <div class="tip tg" style="margin-top:14px"><strong>Add these phrases:</strong> "Think step by step." / "Reason through this before answering." / "Explain your logic, then give the answer."</div>
+  </div>
+</div>
+
+<!-- ══ 8 · Iteration Prompting ══ -->
+<div class="slide bg-ink" data-t="Iteration — Refining AI Output">
+  <div class="bg-num">↻</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">Iteration — <em>refining</em> the output</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">One prompt rarely gives you the perfect answer. Think of it as a conversation — each response is a draft you refine.</p>
+    <div class="cards">
+      <div class="card"><div class="card-num">1</div><div class="card-title">First prompt</div><div class="card-body">Get a starting point. Don't expect perfection.</div></div>
+      <div class="card"><div class="card-num">2</div><div class="card-title">Critique it</div><div class="card-body">"Option 3 is too generic. Make it more symbolic and bold."</div></div>
+      <div class="card"><div class="card-num">3</div><div class="card-title">Constrain it</div><div class="card-body">"Now rewrite options 1 and 3, but keep them under 6 words each."</div></div>
+      <div class="card"><div class="card-num">4</div><div class="card-title">Combine</div><div class="card-body">"Take the tension from option 1 and the typography direction from option 4 and merge them."</div></div>
+    </div>
+    <div class="tip" style="margin-top:14px"><strong>Key phrase:</strong> "Keep what works, change what doesn't — and explain what you changed."</div>
+  </div>
+</div>
+
+<!-- ══ 9 · Live Prompt Examples ══ -->
+<div class="slide bg-blue" data-t="Live Prompt Examples">
+  <div class="bg-num">EX</div>
+  <p class="tag light">Part 1 · Prompt Engineering</p>
+  <h2 class="h-section">Live prompt <span class="a2">examples</span></h2>
+  <div class="rule r2"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Prompts you can use right now as a graphic designer:</p>
+
+    <span class="prompt-label l2">Color palette prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="ex1"><span class="kw">Act as a color theory expert.</span> Give me 3 color palette options for a <span class="ph">[luxury / bold / spiritual / minimal]</span> brand targeting <span class="ph">[audience]</span>. For each palette: include 4 hex codes, a palette name, and one sentence on the emotional mood it creates.</div>
+      <button class="copy-btn" onclick="copyPrompt('ex1',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label l2" style="margin-top:10px">Font pairing prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="ex2"><span class="kw">Act as a typography specialist.</span> Suggest 3 font pairings for a <span class="ph">[tone]</span> poster design for <span class="ph">[event/brand]</span>. Avoid overused fonts. For each pairing include: headline font, body font, why they work together, and where to download them free.</div>
+      <button class="copy-btn" onclick="copyPrompt('ex2',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label l2" style="margin-top:10px">Headline rewrite prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="ex3"><span class="kw">Rewrite this poster text in 8 headline variations:</span> "<span class="ph">[your original text]</span>". Tone: <span class="ph">[bold / urgent / elegant / provocative]</span>. Make them punchy. Maximum 6 words each. No long sentences. Output as a numbered list — headlines only, no explanations.</div>
+      <button class="copy-btn" onclick="copyPrompt('ex3',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+  PART 2: POSTER SYSTEM
+══════════════════════════ -->
+
+<!-- ══ 10 · Part 2 Intro ══ -->
+<div class="slide bg-ink" data-t="Part 2 — The AI Poster System">
+  <div class="bg-num">P2</div>
+  <p class="tag light" style="margin-bottom:8px">Part 2 · AI-Powered Design System</p>
+  <h1 class="h-display light" style="font-size:clamp(28px,5.5vw,72px)">The <em>AI-Powered</em><br>Poster System</h1>
+  <div class="rule"></div>
+  <p class="body light" style="max-width:580px">A repeatable 6-phase pipeline you run <em>every time</em> you design a poster. AI thinks with you — Photoshop is where you execute.</p>
+  <div class="steps" style="margin-top:20px">
+    <div class="step-pill"><div class="step-n">1</div>Strategy</div>
+    <div class="step-pill"><div class="step-n">2</div>Focal Concept</div>
+    <div class="step-pill"><div class="step-n">3</div>Inspiration</div>
+    <div class="step-pill"><div class="step-n">4</div>Assets</div>
+    <div class="step-pill"><div class="step-n">5</div>Typography</div>
+    <div class="step-pill"><div class="step-n">6</div>Evaluation</div>
+  </div>
+  <div class="tip" style="margin-top:20px"><strong>Rule:</strong> Never generate a full poster with AI. Only generate elements. The design thinking is yours.</div>
+</div>
+
+<!-- ══ 11 · Why AI Posters Look Bad ══ -->
+<div class="slide bg-red" data-t="Why AI Posters Look Generic">
+  <div class="bg-num">⚠</div>
+  <p class="tag light">Part 2 · The Problem</p>
+  <h2 class="h-section">Why AI posters <em>look generic</em></h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Fully AI-generated posters look AI-ish for specific, fixable reasons:</p>
+    <ul class="list">
+      <li><div class="dot dot-x">✕</div><div>Too many effects competing at once</div></li>
+      <li><div class="dot dot-x">✕</div><div>Over-detailed, busy backgrounds</div></li>
+      <li><div class="dot dot-x">✕</div><div>Poor typography — fonts that don't match the tone</div></li>
+      <li><div class="dot dot-x">✕</div><div>No visual hierarchy — everything shouting equally</div></li>
+      <li><div class="dot dot-x">✕</div><div>No restraint — nothing removed</div></li>
+      <li><div class="dot dot-x">✕</div><div>Stock-looking focal images with no concept behind them</div></li>
+    </ul>
+    <div class="tip" style="margin-top:16px">
+      <strong>The shift:</strong> You are not using AI to design. You are using AI to <strong>think faster</strong>. The creative judgment is still yours.
+    </div>
+  </div>
+</div>
+
+<!-- ══ 12 · Phase 1 — Strategy ══ -->
+<div class="slide bg-warm" data-t="Phase 1 — Strategy">
+  <div class="bg-num">1</div>
+  <p class="tag light">Phase 1 · Strategy</p>
+  <h2 class="h-section"><span class="gold">Phase 1</span> — Strategy<br><em>before</em> opening Photoshop</h2>
+  <div class="rule rg"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">AI should define clarity before you touch any design tool. This prevents random designing.</p>
+    <span class="prompt-label lg">Strategy Builder Prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p1">I am designing a poster for: <span class="ph">[event / business / campaign]</span>
+
+Target audience: <span class="ph">[age, interests, context]</span>
+Goal: <span class="ph">[sell tickets / raise awareness / launch product]</span>
+Tone: <span class="ph">[bold / spiritual / luxury / street / corporate]</span>
+
+<span class="kw">Give me:</span>
+1. A clear visual hierarchy (what should be biggest to smallest)
+2. The emotional direction this poster should create
+3. 3 distinct creative angles to explore
+4. A suggested focal point idea
+5. Color direction with 3–4 hex codes</div>
+      <button class="copy-btn" onclick="copyPrompt('p1',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 13 · Phase 2 — Focal Concept ══ -->
+<div class="slide bg-ink" data-t="Phase 2 — Focal Concept">
+  <div class="bg-num">2</div>
+  <p class="tag light">Phase 2 · Focal Concept</p>
+  <h2 class="h-section"><em>Phase 2</em> — The big<br>focal idea</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">This is where most AI posters fail — a generic "brain graphic" or "globe icon" instead of something symbolic and memorable.</p>
+    <span class="prompt-label">Focal Concept Generator</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p2"><span class="kw">Act as a creative director at a top design agency.</span>
+
+Give me 5 strong visual focal point ideas for a poster about: <span class="ph">[topic]</span>
+
+Rules:
+- Avoid generic, stock-photo-style ideas
+- Make each idea symbolic, bold, or metaphorical
+- Each should be visually striking and uncluttered
+- Think like a designer, not a content writer</div>
+      <button class="copy-btn" onclick="copyPrompt('p2',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+    <div class="tip" style="margin-top:12px">
+      <strong>Example:</strong> Instead of "AI brain image" → a glowing fingerprint made of code · a cracked wall revealing circuitry · a human shadow shaped like a robot
+    </div>
+  </div>
+</div>
+
+<!-- ══ 14 · Phase 3 — Inspiration Mining ══ -->
+<div class="slide bg-blue" data-t="Phase 3 — Pinterest Keywords">
+  <div class="bg-num">3</div>
+  <p class="tag light">Phase 3 · Inspiration</p>
+  <h2 class="h-section"><span class="a2">Phase 3</span> — Pinterest<br>keyword mining</h2>
+  <div class="rule r2"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:6px">You don't search "church poster." You search <em>mood-based keywords</em>.</p>
+    <div class="two-col" style="margin-top:10px">
+      <div>
+        <span class="prompt-label l2">Pinterest Keyword Prompt</span>
+        <div class="prompt-wrap">
+          <div class="prompt-block" id="p3">Give me 20 Pinterest search keywords for a poster with this concept:
+
+Theme: <span class="ph">[your theme]</span>
+Mood: <span class="ph">[dark / warm / minimal / cinematic]</span>
+Style: <span class="ph">[editorial / brutalist / Swiss / organic]</span>
+Color tone: <span class="ph">[muted / high contrast / neon / earthy]</span>
+
+<span class="kw">Avoid generic words like "poster design."
+Make them aesthetic and mood-based.</span></div>
+          <button class="copy-btn" onclick="copyPrompt('p3',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        </div>
+      </div>
+      <div>
+        <p class="body light" style="margin-bottom:10px">Example outputs:</p>
+        <div class="examples">
+          <span class="ex-chip">brutalist typography layout</span>
+          <span class="ex-chip">minimal dark editorial</span>
+          <span class="ex-chip">high contrast church flyer</span>
+          <span class="ex-chip">cinematic blue lighting</span>
+          <span class="ex-chip">Swiss grid typography</span>
+          <span class="ex-chip">film grain overlay dark</span>
+          <span class="ex-chip">editorial black and white</span>
+          <span class="ex-chip">vintage risograph print</span>
+        </div>
+        <div class="tip t2" style="margin-top:12px"><strong>Result:</strong> Your inspiration quality upgrades instantly from "generic" to "curated."</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 15 · Phase 4 — Textures ══ -->
+<div class="slide bg-ink" data-t="Phase 4 — Textures & Assets">
+  <div class="bg-num">4</div>
+  <p class="tag light">Phase 4 · Asset Generation</p>
+  <h2 class="h-section"><em>Phase 4</em> — Textures<br>&amp; background assets</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <div class="tip" style="margin-bottom:14px"><strong>The rule:</strong> Never generate a full poster with AI. Only generate <em>elements</em> — textures, lighting, grain, abstract shapes. You compose them in Photoshop.</div>
+    <span class="prompt-label">Texture Generator Prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p4a">Generate a high resolution texture of: <span class="ph">[describe the material]</span>
+
+Lighting: <span class="ph">[soft / dramatic / studio / ambient]</span>
+Style: realistic, photographic
+No text. No objects. No watermarks.
+Output: seamless if possible</div>
+      <button class="copy-btn" onclick="copyPrompt('p4a',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+    <span class="prompt-label" style="margin-top:12px">Lighting Overlay Prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p4b">Generate a cinematic light leak overlay.
+Color: <span class="ph">[amber / blue / warm white / cool teal]</span>
+Style: subtle, not exaggerated
+Background: transparent PNG
+Use in Photoshop with blending mode: <span class="ph">[Overlay / Screen / Soft Light]</span></div>
+      <button class="copy-btn" onclick="copyPrompt('p4b',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+    <div class="examples" style="margin-top:10px">
+      <span class="ex-chip">Dark concrete texture, soft top lighting</span>
+      <span class="ex-chip">Matte black paper texture</span>
+      <span class="ex-chip">Dust particles in dark bg</span>
+      <span class="ex-chip">Film grain overlay</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 16 · Phase 5 — Typography ══ -->
+<div class="slide bg-green" data-t="Phase 5 — Typography System">
+  <div class="bg-num">5</div>
+  <p class="tag light">Phase 5 · Typography</p>
+  <h2 class="h-section"><span class="a3">Phase 5</span> — Typography<br>system</h2>
+  <div class="rule r3"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:10px">Typography is where amateur posters die. Don't ask "give me nice fonts." Ask with precision.</p>
+    <div class="two-col">
+      <div>
+        <span class="prompt-label l3">Font Pairing Prompt</span>
+        <div class="prompt-wrap">
+          <div class="prompt-block" id="p5a"><span class="kw">Act as a typography specialist.</span>
+Suggest 5 font pairings for:
+
+Tone: <span class="ph">[bold / elegant / spiritual / raw]</span>
+Industry: <span class="ph">[church / tech / nightlife / corporate]</span>
+Audience: <span class="ph">[describe]</span>
+
+For each pairing include:
+- Headline font
+- Body font
+- Why they work (1 sentence)
+- Download source (Google Fonts / Adobe Fonts)</div>
+          <button class="copy-btn" onclick="copyPrompt('p5a',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        </div>
+      </div>
+      <div>
+        <span class="prompt-label l3">Headline Rewrite Prompt</span>
+        <div class="prompt-wrap">
+          <div class="prompt-block" id="p5b">Rewrite this poster message in 10 powerful headline variations:
+
+Original: "<span class="ph">[your text]</span>"
+Tone: <span class="ph">[punchy / elegant / urgent / bold]</span>
+
+Rules:
+- Maximum 6 words each
+- No long sentences
+- Output as a numbered list
+- Headlines only, no explanations</div>
+          <button class="copy-btn" onclick="copyPrompt('p5b',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 17 · Phase 6 (Layout Blueprint) ══ -->
+<div class="slide bg-warm" data-t="Phase 6 — Layout Blueprint">
+  <div class="bg-num">6</div>
+  <p class="tag light">Phase 6a · Layout</p>
+  <h2 class="h-section"><span class="gold">Phase 6</span> — Layout<br>blueprint</h2>
+  <div class="rule rg"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Before designing, have AI map out the spatial layout using the 8 composition rules. This prevents messy, unstructured work.</p>
+    <span class="prompt-label lg">Layout Blueprint Prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p6">Based on these poster elements:
+
+Headline: "<span class="ph">[your headline]</span>"
+Subtext: "<span class="ph">[event details / tagline]</span>"
+Call to action: "<span class="ph">[website / date / ticket link]</span>"
+Focal image: <span class="ph">[describe the main visual]</span>
+
+<span class="kw">Describe a clean layout structure using:</span>
+- Visual hierarchy (what is biggest to smallest)
+- Grid alignment (centred / rule of thirds / off-grid)
+- White space placement
+- Focal point position
+- Typography zones
+
+Be specific about placement. No vague advice.</div>
+      <button class="copy-btn" onclick="copyPrompt('p6',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 18 · Phase 6 — Critique Prompt ══ -->
+<div class="slide bg-red" data-t="Phase 6 — AI Critique Prompt">
+  <div class="bg-num">✓</div>
+  <p class="tag light">Phase 6b · Evaluation</p>
+  <h2 class="h-section"><em>Final step</em> —<br>AI poster critique</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:10px">Upload your poster to AI and ask for a brutal, structured critique. This is how you improve fast.</p>
+    <span class="prompt-label">Final Critique Prompt</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block" id="p7"><span class="kw">Act as a senior graphic designer and harsh design critic.</span>
+
+Critique this poster based on:
+1. Visual hierarchy — is the eye guided correctly?
+2. Focal point — is there one clear hero element?
+3. Balance — does the layout feel stable?
+4. Typography — do the fonts match the tone?
+5. White space — is it used or wasted?
+6. Alignment — is everything intentionally placed?
+7. Contrast — is text readable against the background?
+8. Professionalism — does it look competent?
+
+<span class="kw">Be brutally honest.</span>
+Tell me what feels amateur.
+Tell me what to remove.
+Tell me the one most important change to make.</div>
+      <button class="copy-btn" onclick="copyPrompt('p7',this)" title="Copy prompt"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 19 · Photoshop Execution Order ══ -->
+<div class="slide bg-ink" data-t="Photoshop Execution Order">
+  <div class="bg-num">PS</div>
+  <p class="tag light">Design Execution</p>
+  <h2 class="h-section">Inside <em>Photoshop</em> —<br>the right order</h2>
+  <div class="rule"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Always build your poster in this order. Each step sets up the next.</p>
+    <ul class="list">
+      <li><div class="dot dot-r">1</div><div><strong>Background first</strong> — set the mood with colour and tone before anything else</div></li>
+      <li><div class="dot dot-r">2</div><div><strong>Add texture</strong> — overlay grain, paper, or concrete with Soft Light or Overlay blend mode</div></li>
+      <li><div class="dot dot-r">3</div><div><strong>Place the focal element</strong> — your hero image, shape, or illustration</div></li>
+      <li><div class="dot dot-r">4</div><div><strong>Add the headline (BIG)</strong> — this should command the most visual weight</div></li>
+      <li><div class="dot dot-r">5</div><div><strong>Add supporting text</strong> — smaller, quieter, secondary</div></li>
+      <li><div class="dot dot-r">6</div><div><strong>Adjust contrast</strong> — push darks darker and lights lighter until it pops</div></li>
+      <li><div class="dot dot-r">7</div><div><strong>Add grain overlay</strong> — this unifies everything and kills the "digital" feel</div></li>
+      <li><div class="dot dot-r">8</div><div><strong>Step back and remove ONE thing</strong> — if you don't remove something, it's probably cluttered</div></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ 20 · The Full Pipeline ══ -->
+<div class="slide bg-blue" data-t="The Complete Pipeline">
+  <div class="bg-num">∑</div>
+  <p class="tag light">Summary</p>
+  <h2 class="h-section">Your complete <span class="a2">pipeline</span></h2>
+  <div class="rule r2"></div>
+  <div class="inner">
+    <p class="body light" style="margin-bottom:14px">Run these 8 prompts for every single poster you design:</p>
+    <div class="pipeline">
+      <div class="pip-item"><div class="pip-n">1</div><div class="pip-text">Strategy Builder</div></div>
+      <div class="pip-item"><div class="pip-n">2</div><div class="pip-text">Focal Concept</div></div>
+      <div class="pip-item"><div class="pip-n">3</div><div class="pip-text">Pinterest Keywords</div></div>
+      <div class="pip-item"><div class="pip-n">4</div><div class="pip-text">Texture Generation</div></div>
+      <div class="pip-item"><div class="pip-n">5</div><div class="pip-text">Font Pairing</div></div>
+      <div class="pip-item"><div class="pip-n">6</div><div class="pip-text">Headline Rewrite</div></div>
+      <div class="pip-item"><div class="pip-n">7</div><div class="pip-text">Layout Blueprint</div></div>
+      <div class="pip-item"><div class="pip-n">8</div><div class="pip-text">Final Critique</div></div>
+    </div>
+    <div class="tip t2" style="margin-top:16px"><strong>The result:</strong> You think faster, design smarter, and produce work that doesn't look like everyone else's AI output — because you made all the creative decisions.</div>
+  </div>
+</div>
+
+<!-- ══ 21 · Quick Reference — All Prompts ══ -->
+<div class="slide bg-paper" data-t="Quick Reference — All Prompts">
+  <div class="bg-num ink">QR</div>
+  <p class="tag" style="color:var(--muted)">Quick Reference</p>
+  <h2 class="h-section ink">All <em>8 prompts</em> — quick reference</h2>
+  <div class="rule"></div>
+  <div class="inner ink-scroll">
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px">1 · Strategy Builder</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr1">I am designing a poster for: <span class="ph">[event]</span>. Target audience: <span class="ph">[describe]</span>. Goal: <span class="ph">[goal]</span>. Tone: <span class="ph">[tone]</span>. Give me: visual hierarchy, emotional direction, 3 creative angles, focal point idea, color direction with hex codes.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr1',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">2 · Focal Concept</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr2">Act as a creative director. Give me 5 strong visual focal point ideas for a poster about: <span class="ph">[topic]</span>. Avoid generic ideas. Make them symbolic, bold, or metaphorical. Each must be visually striking.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr2',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">3 · Pinterest Keywords</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr3">Give me 20 Pinterest search keywords for: Theme: <span class="ph">[theme]</span>, Mood: <span class="ph">[mood]</span>, Style: <span class="ph">[style]</span>, Color: <span class="ph">[tone]</span>. Avoid generic words. Make them aesthetic and mood-based.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr3',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">4 · Texture</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr4">Generate a high resolution texture of: <span class="ph">[material]</span>. Lighting: <span class="ph">[type]</span>. Style: realistic. No text, no objects, no watermarks.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr4',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">5 · Font Pairing</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr5">Act as a typography specialist. Suggest 5 font pairings. Tone: <span class="ph">[tone]</span>. Avoid overused fonts. For each: headline font, body font, why they work, download source.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr5',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">6 · Headline Rewrite</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr6">Rewrite "<span class="ph">[your text]</span>" in 10 powerful headline variations. Tone: <span class="ph">[tone]</span>. Max 6 words each. Numbered list. Headlines only.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr6',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">7 · Layout Blueprint</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr7">Headline: <span class="ph">[text]</span>. Subtext: <span class="ph">[text]</span>. CTA: <span class="ph">[text]</span>. Focal image: <span class="ph">[describe]</span>. Describe a clean layout structure: visual hierarchy, grid, white space, focal point position, typography zones. Be specific.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr7',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+
+    <span class="prompt-label" style="display:block;margin-bottom:4px;margin-top:8px">8 · Final Critique</span>
+    <div class="prompt-wrap">
+      <div class="prompt-block on-paper" id="qr8">Act as a senior graphic designer. Critique this poster on: hierarchy, focal point, balance, typography, white space, alignment, contrast, professionalism. Be brutally honest. Tell me what to remove and the one most important change to make.</div>
+      <button class="copy-btn on-paper" onclick="copyPrompt('qr8',this)" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 22 · Closing ══ -->
+<div class="slide bg-ink" data-t="Closing">
+  <div class="bg-num">END</div>
+  <p class="tag light">Closing</p>
+  <h1 class="h-display light" style="font-size:clamp(28px,5.5vw,72px)">You're not using AI<br>to <em>design.</em></h1>
+  <div class="rule"></div>
+  <p class="body light" style="max-width:580px;margin-bottom:20px">You're using AI to <strong>think faster</strong>, research smarter, and eliminate the blank-canvas paralysis that slows every designer down.</p>
+  <p class="body light" style="max-width:580px">The creative judgment, the restraint, the eye — <strong>that's still yours.</strong></p>
+  <div class="cover-num-row" style="margin-top:32px">
+    <span>GRAPHIC DESIGN IN THE AGE OF AI</span>
+    <span>· COMPLETE ·</span>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+let cur = 0, busy = false;
+
+function go(dir) {
+  const next = cur + dir;
+  if(busy || next < 0 || next >= slides.length) return;
+  busy = true;
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('exit');
+  const nc = slides[next];
+  const d = dir > 0 ? 1 : -1;
+  nc.style.cssText = `opacity:0;transform:translateY(${d*24}px)`;
+  nc.classList.add('active');
+  nc.style.pointerEvents = 'none';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    nc.style.cssText = 'opacity:1;transform:translateY(0)';
+    setTimeout(() => {
+      slides[cur].classList.remove('exit');
+      nc.style.cssText = '';
+      nc.style.pointerEvents = '';
+      busy = false;
+    }, 460);
+  }));
+  cur = next; updateUI();
+}
+
+function goTo(i) {
+  if(i === cur) return;
+  go(i > cur ? 1*(i-cur) : -1*(cur-i));
+  // simplified: just jump
+  busy = false;
+  slides.forEach((s,j) => { s.classList.remove('active','exit'); s.style.cssText = ''; });
+  slides[i].classList.add('active');
+  cur = i; updateUI();
+}
+
+function updateUI() {
+  const t = slides.length;
+  document.getElementById('prog-fill').style.width = ((cur+1)/t*100)+'%';
+  document.getElementById('counter').textContent = String(cur+1).padStart(2,'0')+'/'+String(t).padStart(2,'0');
+  document.getElementById('nav-prev').classList.toggle('off', cur===0);
+  document.getElementById('nav-next').classList.toggle('off', cur===t-1);
+  document.querySelectorAll('.toc-item').forEach((el,i) => el.classList.toggle('cur', i===cur));
+}
+
+// Build TOC
+const tl = document.getElementById('toc-list');
+slides.forEach((s,i) => {
+  const t = s.dataset.t || 'Slide '+(i+1);
+  const el = document.createElement('div');
+  el.className = 'toc-item'+(i===0?' cur':'');
+  el.innerHTML = `<span class="toc-n">${String(i+1).padStart(2,'0')}</span><span class="toc-t">${t}</span>`;
+  el.onclick = () => { goTo(i); closeToc(); };
+  tl.appendChild(el);
+});
+
+let tocOpen = false;
+function toggleToc(){ tocOpen=!tocOpen; document.getElementById('toc').classList.toggle('open',tocOpen); }
+function closeToc(){ tocOpen=false; document.getElementById('toc').classList.remove('open'); }
+document.addEventListener('click', e => {
+  if(tocOpen && !document.getElementById('toc').contains(e.target) && !document.getElementById('menu-btn').contains(e.target)) closeToc();
+});
+
+// Keys
+document.addEventListener('keydown', e => {
+  if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){ e.preventDefault(); go(1); }
+  else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){ e.preventDefault(); go(-1); }
+  else if(e.key==='Escape') closeToc();
+  else if(e.key==='Home') goTo(0);
+  else if(e.key==='End') goTo(slides.length-1);
+});
+
+// Touch
+let tx=0,ty=0;
+document.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+document.addEventListener('touchend', e=>{
+  const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>44) go(dx<0?1:-1);
+},{passive:true});
+
+// Copy
+function copyPrompt(id, btn) {
+  const el = document.getElementById(id);
+  const text = el.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    showToast();
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+    }, 2000);
+  }).catch(() => {
+    // fallback
+    const r = document.createRange(); r.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(r);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    showToast();
+  });
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+updateUI();
+</script>
+</body>
+</html>
